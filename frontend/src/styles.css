@@ -67,3 +67,9 @@ body { margin: 0; background: #f3f6fc; color: #172b49; font-family: Arial, Helve
   .bottom-nav { min-height: 82px; }
   .bottom-nav button { min-width: 125px; min-height: 55px; font-size: 14px; }
 }
+@media (max-width: 480px) {
+  .bottom-nav { justify-content: space-around; gap: 4px; padding: 8px; }
+  .bottom-nav button { min-width: 0; flex: 1 1 0; max-width: 80px; min-height: 60px; flex-direction: column; justify-content: center; gap: 4px; font-size: 11px; padding: 8px 4px; }
+  .bottom-nav button span { display: none; }
+  .bottom-nav button svg { font-size: 24px; }
+}
