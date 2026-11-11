@@ -35,3 +35,10 @@ Abre http://localhost:3000.
 - Salarios: CRUD completo.
 
 Nota: los datos de ejemplo del panel se cargan desde MySQL; no son registros fijos.
+
+## Búsqueda y validación
+Las listas y el resumen permiten buscar por los valores visibles. La API valida los formularios tanto al crear como al editar.
+
+Para usar otro servidor, configura `REACT_APP_API_URL` en `frontend/.env` (por ejemplo, `http://localhost:3001/api`) antes de iniciar o compilar.
+
+Verificaciones: `npm --prefix backend test` y `npm --prefix frontend run build`.

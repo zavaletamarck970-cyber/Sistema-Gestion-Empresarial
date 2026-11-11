@@ -2,15 +2,18 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
   FaUsers, FaFolder, FaLink, FaMoneyBillWave, FaHome, FaArrowRight,
-  FaList, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaInfoCircle
+  FaList, FaPlus, FaEdit, FaTrash, FaSave, FaInfoCircle
 } from "react-icons/fa";
 
-const API = "http://localhost:3001/api";
+const API = process.env.REACT_APP_API_URL || "http://localhost:3001/api";
 const emptyEmployee = { nombre: "", edad: "", pais: "", cargo: "", correo: "" };
 const emptyProject = { nombre_proyecto: "", descripcion: "" };
 const emptySalary = { empleado_id: "", monto: "", fecha_actualizacion: new Date().toISOString().slice(0, 10) };
 
 export default function App() {
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [page, setPage] = useState("inicio");
   const [summary, setSummary] = useState({ conteos: {}, registros: [] });
   const [employees, setEmployees] = useState([]);
@@ -27,6 +30,8 @@ export default function App() {
   const [projectEditing, setProjectEditing] = useState(null);
 
   const loadAll = async () => {
+    setLoading(true);
+    setLoadError("");
     try {
       const [s, e, p, a, sal] = await Promise.all([
         axios.get(`${API}/resumen`), axios.get(`${API}/empleados`),
@@ -36,13 +41,13 @@ export default function App() {
       setSummary(s.data); setEmployees(e.data); setProjects(p.data);
       setAssignments(a.data); setSalaries(sal.data);
     } catch (error) {
-      setNotice(error.response?.data?.message || "No se pudo conectar con el servidor. Verifica que Node.js y MySQL estén activos.");
-    }
+      setLoadError(error.response?.data?.message || "No se pudo conectar con el servidor. Verifica que Node.js y MySQL estén activos.");
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { loadAll(); }, []);
   const message = (text) => { setNotice(text); window.setTimeout(() => setNotice(""), 3500); };
-  const changePage = (value) => { setPage(value); setNotice(""); };
+  const changePage = (value) => { setPage(value); setSearch(""); setNotice(""); };
 
   const saveEmployee = async (e) => {
     e.preventDefault();
@@ -103,6 +108,9 @@ export default function App() {
     catch (err) { message("No se pudo eliminar el salario."); }
   };
 
+  const filterRows = (rows) => rows.filter(row => Object.values(row).some(value =>
+    value != null && String(value).toLocaleLowerCase("es").includes(search.trim().toLocaleLowerCase("es"))));
+
   const nav = [
     ["empleados", <FaUsers />, "Empleados"],
     ["proyectos", <FaFolder />, "Proyectos"],
@@ -116,8 +124,8 @@ export default function App() {
   );
   const Actions = ({ onEdit, onDelete }) => (
     <div className="actions">
-      {onEdit && <button className="icon-btn edit" title="Editar" onClick={onEdit}><FaEdit /></button>}
-      <button className="icon-btn delete" title="Eliminar" onClick={onDelete}><FaTrash /></button>
+      {onEdit && <button className="icon-btn edit" aria-label="Editar" title="Editar" onClick={onEdit}><FaEdit /></button>}
+      <button className="icon-btn delete" aria-label="Eliminar" title="Eliminar" onClick={onDelete}><FaTrash /></button>
     </div>
   );
 
@@ -129,8 +137,15 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        {notice && <div className="alert alert-info notice">{notice}</div>}
+        {notice && <div role="status" className="alert alert-info notice">{notice}</div>}
 
+        {loading && <p role="status">Cargando información…</p>}
+        {loadError && <div role="alert" className="alert alert-danger">{loadError} <button type="button" className="secondary-btn" disabled={loading} onClick={loadAll}>Reintentar</button></div>}
+        <div className="search-bar">
+          <label htmlFor="record-search">Buscar en {page === "inicio" ? "el resumen" : page}</label>
+          <input id="record-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre, correo, proyecto…" />
+          {search && <button type="button" className="secondary-btn" onClick={() => setSearch("")}>Limpiar búsqueda</button>}
+        </div>
         {page === "inicio" && <section className="main-card">
           <div className="section-heading"><h2>Datos del Sistema</h2><p>Información de empleados, sus proyectos y salarios.</p></div>
           <div className="summary-cards">
@@ -142,7 +157,7 @@ export default function App() {
             <div className="panel-title"><FaList /> Resumen de Información</div>
             <Table headers={["ID Empleado","Nombre","Edad","País","Cargo","Correo","Proyecto Asignado","Salario"]}>
               {summary.registros.map((r,i) => <tr key={`${r.id}-${i}`}><td>{r.id}</td><td>{r.nombre}</td><td>{r.edad}</td><td>{r.pais}</td><td>{r.cargo}</td><td>{r.correo}</td><td>{r.proyecto || "Sin asignar"}</td><td>{r.salario == null ? "Sin registrar" : `S/ ${Number(r.salario).toLocaleString("es-PE")}`}</td></tr>)}
-              {!summary.registros.length && <tr><td colSpan="8" className="empty">Todavía no hay empleados registrados.</td></tr>}
+              {!filterRows(summary.registros).length && <tr><td colSpan="8" className="empty">No hay registros que coincidan.</td></tr>}
             </Table>
           </div>
           <div className="info-note"><FaInfoCircle /> Este módulo permite administrar la relación entre empleados, proyectos y salarios de la empresa.</div>
@@ -161,13 +176,13 @@ export default function App() {
           <div className="panel-title"><FaList/> Lista de Empleados</div>
           <div className="employees-table-wrapper">
             <Table headers={["ID","Nombre","Edad","País","Cargo","Correo","Acciones"]}>
-              {employees.map(r=><tr key={r.id}><td>{r.id}</td><td>{r.nombre}</td><td>{r.edad}</td><td>{r.pais}</td><td>{r.cargo}</td><td>{r.correo}</td><td><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></td></tr>)}
-              {!employees.length && <tr><td colSpan="7" className="empty">No hay empleados registrados.</td></tr>}
+              {filterRows(employees).map(r=><tr key={r.id}><td>{r.id}</td><td>{r.nombre}</td><td>{r.edad}</td><td>{r.pais}</td><td>{r.cargo}</td><td>{r.correo}</td><td><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></td></tr>)}
+              {!filterRows(employees).length && <tr><td colSpan="7" className="empty">No hay empleados que coincidan.</td></tr>}
             </Table>
           </div>
           <div className="employees-cards">
-            {employees.map(r=><article key={r.id} className="employee-card"><div className="badge">#{r.id}</div><div className="kv"><span className="label">Nombre</span><span className="value">{r.nombre}</span></div><div className="kv"><span className="label">Edad</span><span className="value">{r.edad}</span></div><div className="kv"><span className="label">País</span><span className="value">{r.pais}</span></div><div className="kv"><span className="label">Cargo</span><span className="value">{r.cargo}</span></div><div className="kv"><span className="label">Correo</span><span className="value">{r.correo}</span></div><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></article>)}
-            {!employees.length && <div className="empty">No hay empleados registrados.</div>}
+            {filterRows(employees).map(r=><article key={r.id} className="employee-card"><div className="badge">#{r.id}</div><div className="kv"><span className="label">Nombre</span><span className="value">{r.nombre}</span></div><div className="kv"><span className="label">Edad</span><span className="value">{r.edad}</span></div><div className="kv"><span className="label">País</span><span className="value">{r.pais}</span></div><div className="kv"><span className="label">Cargo</span><span className="value">{r.cargo}</span></div><div className="kv"><span className="label">Correo</span><span className="value">{r.correo}</span></div><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></article>)}
+            {!filterRows(employees).length && <div className="empty">No hay empleados que coincidan.</div>}
           </div>
         </section>}
 
@@ -180,8 +195,8 @@ export default function App() {
           </form>
           <div className="panel-title"><FaList/> Lista de Proyectos</div>
           <Table headers={["ID","Nombre del proyecto","Descripción","Acciones"]}>
-            {projects.map(r=><tr key={r.id}><td>{r.id}</td><td>{r.nombre_proyecto}</td><td>{r.descripcion}</td><td><Actions onEdit={()=>editProject(r)} onDelete={()=>deleteProject(r.id)}/></td></tr>)}
-            {!projects.length && <tr><td colSpan="4" className="empty">No hay proyectos registrados.</td></tr>}
+            {filterRows(projects).map(r=><tr key={r.id}><td>{r.id}</td><td>{r.nombre_proyecto}</td><td>{r.descripcion}</td><td><Actions onEdit={()=>editProject(r)} onDelete={()=>deleteProject(r.id)}/></td></tr>)}
+            {!filterRows(projects).length && <tr><td colSpan="4" className="empty">No hay proyectos que coincidan.</td></tr>}
           </Table>
         </section>}
 
@@ -194,8 +209,8 @@ export default function App() {
           </form>
           <div className="panel-title"><FaList/> Empleados Asignados</div>
           <Table headers={["ID Empleado","Empleado","ID Proyecto","Proyecto","Acciones"]}>
-            {assignments.map(r=><tr key={`${r.empleado_id}-${r.proyecto_id}`}><td>{r.empleado_id}</td><td>{r.empleado}</td><td>{r.proyecto_id}</td><td>{r.proyecto}</td><td><Actions onDelete={()=>deleteAssignment(r)}/></td></tr>)}
-            {!assignments.length && <tr><td colSpan="5" className="empty">No hay asignaciones registradas.</td></tr>}
+            {filterRows(assignments).map(r=><tr key={`${r.empleado_id}-${r.proyecto_id}`}><td>{r.empleado_id}</td><td>{r.empleado}</td><td>{r.proyecto_id}</td><td>{r.proyecto}</td><td><Actions onDelete={()=>deleteAssignment(r)}/></td></tr>)}
+            {!filterRows(assignments).length && <tr><td colSpan="5" className="empty">No hay asignaciones que coincidan.</td></tr>}
           </Table>
         </section>}
 
@@ -209,14 +224,14 @@ export default function App() {
           </form>
           <div className="panel-title"><FaList/> Lista de Salarios</div>
           <Table headers={["ID","Empleado","Monto","Fecha de actualización","Acciones"]}>
-            {salaries.map(r=><tr key={r.id}><td>{r.id}</td><td>{r.empleado}</td><td>S/ {Number(r.monto).toLocaleString("es-PE",{minimumFractionDigits:2})}</td><td>{String(r.fecha_actualizacion).slice(0,10)}</td><td><Actions onEdit={()=>editSalary(r)} onDelete={()=>deleteSalary(r.id)}/></td></tr>)}
-            {!salaries.length && <tr><td colSpan="5" className="empty">No hay salarios registrados.</td></tr>}
+            {filterRows(salaries).map(r=><tr key={r.id}><td>{r.id}</td><td>{r.empleado}</td><td>S/ {Number(r.monto).toLocaleString("es-PE",{minimumFractionDigits:2})}</td><td>{String(r.fecha_actualizacion).slice(0,10)}</td><td><Actions onEdit={()=>editSalary(r)} onDelete={()=>deleteSalary(r.id)}/></td></tr>)}
+            {!filterRows(salaries).length && <tr><td colSpan="5" className="empty">No hay salarios que coincidan.</td></tr>}
           </Table>
         </section>}
       </main>
 
       <nav className="bottom-nav">
-        {nav.map(([id,icon,label])=><button key={id} className={page===id?"active":""} onClick={()=>changePage(id)}>{icon}<span>{label}</span></button>)}
+        {nav.map(([id,icon,label])=><button key={id} aria-label={label} aria-current={page===id ? "page" : undefined} className={page===id?"active":""} onClick={()=>changePage(id)}>{icon}<span>{label}</span></button>)}
       </nav>
     </div>
   );

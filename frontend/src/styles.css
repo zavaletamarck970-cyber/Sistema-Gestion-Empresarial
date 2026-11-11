@@ -82,3 +82,8 @@ body { margin: 0; background: #f3f6fc; color: #172b49; font-family: Arial, Helve
   .bottom-nav button span { display: none; }
   .bottom-nav button svg { font-size: 24px; }
 }
+
+.search-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.search-bar label { font-weight: 700; }
+.search-bar input { flex: 1; min-width: 180px; padding: 11px 14px; border: 1px solid #cbd6e4; border-radius: 8px; }
+button:focus-visible, input:focus-visible { outline: 3px solid #3479c5; outline-offset: 3px; }
