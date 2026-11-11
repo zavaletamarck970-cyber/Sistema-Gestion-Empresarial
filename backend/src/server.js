@@ -2,9 +2,24 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./config/database");
 
+const { validate, positiveId } = require("./validation");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api", (req, res, next) => {
+  const [resource, ...ids] = req.path.split("/").filter(Boolean);
+  if (!["empleados", "proyectos", "asignaciones", "salarios"].includes(resource)) return next();
+  if (ids.some(id => !positiveId(id))) return res.status(400).json({ message: "El identificador debe ser un entero positivo." });
+  if (["POST", "PUT"].includes(req.method)) {
+    const message = validate(resource, req.body);
+    if (message) return res.status(400).json({ message });
+    for (const key of ["nombre", "pais", "cargo", "correo", "nombre_proyecto", "descripcion"]) {
+      if (typeof req.body[key] === "string") req.body[key] = req.body[key].trim();
+    }
+  }
+  next();
+});
 
 const asyncRoute = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -125,6 +140,7 @@ app.delete("/api/salarios/:id", asyncRoute(async (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err);
+  if (err.type === "entity.parse.failed") return res.status(400).json({ message: "El cuerpo JSON no es válido." });
   if (err.code === "ER_DUP_ENTRY") return res.status(409).json({ message: "Ese registro ya existe." });
   if (err.code === "ER_NO_REFERENCED_ROW_2") return res.status(400).json({ message: "El empleado o proyecto seleccionado no existe." });
   res.status(500).json({ message: "Error interno del servidor." });
