@@ -159,10 +159,16 @@ export default function App() {
             <div className="form-buttons"><button className="primary-btn"><FaSave/> {editing ? "Actualizar" : "Agregar"}</button><button type="button" className="secondary-btn" onClick={()=>{setForm(emptyEmployee);setEditing(null);}}>Limpiar</button></div>
           </form>
           <div className="panel-title"><FaList/> Lista de Empleados</div>
-          <Table headers={["ID","Nombre","Edad","País","Cargo","Correo","Acciones"]}>
-            {employees.map(r=><tr key={r.id}><td>{r.id}</td><td>{r.nombre}</td><td>{r.edad}</td><td>{r.pais}</td><td>{r.cargo}</td><td>{r.correo}</td><td><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></td></tr>)}
-            {!employees.length && <tr><td colSpan="7" className="empty">No hay empleados registrados.</td></tr>}
-          </Table>
+          <div className="employees-table-wrapper">
+            <Table headers={["ID","Nombre","Edad","País","Cargo","Correo","Acciones"]}>
+              {employees.map(r=><tr key={r.id}><td>{r.id}</td><td>{r.nombre}</td><td>{r.edad}</td><td>{r.pais}</td><td>{r.cargo}</td><td>{r.correo}</td><td><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></td></tr>)}
+              {!employees.length && <tr><td colSpan="7" className="empty">No hay empleados registrados.</td></tr>}
+            </Table>
+          </div>
+          <div className="employees-cards">
+            {employees.map(r=><article key={r.id} className="employee-card"><div className="badge">#{r.id}</div><div className="kv"><span className="label">Nombre</span><span className="value">{r.nombre}</span></div><div className="kv"><span className="label">Edad</span><span className="value">{r.edad}</span></div><div className="kv"><span className="label">País</span><span className="value">{r.pais}</span></div><div className="kv"><span className="label">Cargo</span><span className="value">{r.cargo}</span></div><div className="kv"><span className="label">Correo</span><span className="value">{r.correo}</span></div><Actions onEdit={()=>editEmployee(r)} onDelete={()=>deleteEmployee(r.id)}/></article>)}
+            {!employees.length && <div className="empty">No hay empleados registrados.</div>}
+          </div>
         </section>}
 
         {page === "proyectos" && <section className="main-card">

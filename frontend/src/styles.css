@@ -46,6 +46,13 @@ body { margin: 0; background: #f3f6fc; color: #172b49; font-family: Arial, Helve
 .icon-btn.edit { background: #1764b5; }
 .icon-btn.delete { background: #df4141; }
 .empty { text-align: center; color: #718096; padding: 22px !important; }
+.employees-table-wrapper { overflow-x: auto; }
+.employees-cards { display: none; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 12px; }
+.employee-card { border: 1px solid #dce5f0; border-radius: 12px; padding: 16px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
+.employee-card .badge { font-size: 12px; font-weight: 800; color: #1d5597; background: #e1efff; width: fit-content; padding: 2px 10px; border-radius: 20px; align-self: start; margin-bottom: 4px; }
+.employee-card .kv { display: flex; justify-content: space-between; gap: 10px; }
+.employee-card .label { font-size: 12px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+.employee-card .value { font-weight: 750; color: #172b49; word-break: break-word; }
 .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; min-height: 96px; background: #ffffffed; backdrop-filter: blur(8px); border-top: 1px solid #d9e1eb; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px 18px; z-index: 20; }
 .bottom-nav button { min-width: 185px; min-height: 65px; border: 0; border-radius: 12px; background: #e8edf5; color: #263f5e; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 18px; font-weight: 750; }
 .bottom-nav button.active { background: #263f5e; color: white; }
@@ -55,6 +62,8 @@ body { margin: 0; background: #f3f6fc; color: #172b49; font-family: Arial, Helve
   .form-grid { grid-template-columns: 1fr 1fr; }
   .bottom-nav { justify-content: flex-start; overflow-x: auto; }
   .bottom-nav button { min-width: 150px; }
+  .employees-table-wrapper { display: none; }
+  .employees-cards { display: grid; }
 }
 @media (max-width: 600px) {
   .top-header { gap: 12px; padding: 16px; }
